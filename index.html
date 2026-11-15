@@ -40,6 +40,7 @@ button:hover{background:#252e40}
 #osd small{color:var(--mut)}
 .live{display:inline-flex;gap:6px;align-items:center;color:var(--acc);font-weight:600;font-size:14px}
 .live::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--acc)}
+#ext{position:absolute;top:14px;right:14px;z-index:2;display:none;padding:8px 14px;border-radius:10px;background:rgba(10,13,20,.86);color:#fff;text-decoration:none;font-size:14px}#ext.on{display:block}
 #entry{position:absolute;top:24px;right:28px;font-size:64px;line-height:1;padding:6px 18px;border-radius:12px;background:rgba(10,13,20,.86);display:none}
 #entry.on{display:block}
 #bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;padding:12px;background:linear-gradient(transparent,rgba(0,0,0,.85));transition:opacity .4s}
@@ -83,6 +84,7 @@ td .lg{width:40px;height:40px;border-radius:8px}
 <div id="tv">
   <video id="vid" playsinline autoplay controls></video>
   <div id="msg"><div><div class="lg" id="mlg"></div><h2 id="mtit" style="margin:0"></h2><p id="mtxt"></p><a id="mweb" target="_blank" rel="noopener">Ver en su web oficial · OK</a></div></div>
+  <a id="ext" target="_blank" rel="noopener">Abrir fuera ↗</a>
   <div id="state">Cargando lista…</div>
   <div id="osd"><div class="n num" id="on"></div><div class="lg" id="olg"></div><div><h2 id="onm"></h2><span class="live">En directo</span> <small id="ofmt"></small></div></div>
   <div id="entry" class="num"></div>
@@ -179,7 +181,7 @@ const BASE=[
  ["La 8 Mediterráneo",["https://newscript.gestec-video.com/hls/8TVEVENTOS.m3u8"],'',"https://graph.facebook.com/la8mediterraneo/picture?width=200&height=200"],
  ["Televisión Canaria",["https://rtvclive.flumotion.cloud/rtvc1live/smil:channel1PRG.smil/playlist.m3u8"],'',"https://i.imgur.com/68LNS8e.png"],
  ["Canal 4 Tenerife",["https://videoserver.tmcreativos.com:19360/hkbpjryheu/hkbpjryheu.m3u8"],'',"https://i.imgur.com/Egymir4.png"],
- ["IB3 Global",[],"https://www.youtube.com/c/ib3/live","https://raw.githubusercontent.com/tv-logo/tv-logos/refs/heads/main/countries/spain/ib3-es.png"],
+ ["IB3 Global",["https://www.youtube.com/channel/UCff_CBVJDTHP4wOHPjP5BMg/live"],"https://www.youtube.com/channel/UCff_CBVJDTHP4wOHPjP5BMg/live","https://raw.githubusercontent.com/tv-logo/tv-logos/refs/heads/main/countries/spain/ib3-es.png"],
  ["ETB1",["https://multimedia.eitb.eus/live-content/etb1hd-hls/master.m3u8"],'',"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/ETB1_2022_logo.svg/500px-ETB1_2022_logo.svg.png"],
  ["ETB2",["https://multimedia.eitb.eus/live-content/etb2hd-hls/master.m3u8"],'',"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/ETB2_2022_logo.svg/500px-ETB2_2022_logo.svg.png"],
  ["TV3Cat",["https://directes3-tv-int.3catdirectes.cat/live-content/tvi-hls/master.m3u8"],'',"https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/TV3CAT.svg/500px-TV3CAT.svg.png"],
@@ -220,9 +222,16 @@ function logo(c){
 document.addEventListener('error',e=>{const t=e.target;if(t.tagName==='IMG'&&t.dataset.fb){t.outerHTML=t.dataset.fb}},true);
 
 // ---- Reproducción ----
-function stop(){const v=$('vid');if(hls){hls.destroy();hls=null}v.pause();v.removeAttribute('src');v.load();const f=$('tv').querySelector('iframe');if(f)f.remove()}
-function ytEmbed(u){const m=u.match(/(?:v=|youtu\.be\/|embed\/|live\/)([\w-]{11})/);return m?'https://www.youtube.com/embed/'+m[1]+'?autoplay=1':''}
-function noStream(c,txt){$('mlg').innerHTML=logo(c);$('mtit').textContent=c.num+'  '+c.name;$('mtxt').textContent=txt;
+function stop(){$('ext').classList.remove('on');const v=$('vid');if(hls){hls.destroy();hls=null}v.pause();v.removeAttribute('src');v.load();const f=$('tv').querySelector('iframe');if(f)f.remove()}
+function ytEmbed(u){let m=(u||'').match(/channel[=\/](UC[\w-]{22})/);if(m)return 'https://www.youtube.com/embed/live_stream?channel='+m[1]+'&autoplay=1';
+  m=(u||'').match(/(?:v=|youtu\.be\/|embed\/|live\/)([\w-]{11})(?![\w-])/);return m?'https://www.youtube.com/embed/'+m[1]+'?autoplay=1':''}
+// webs que no se dejan abrir dentro de otra página
+const NOFRAME=['mitele.es','mediasetinfinity.es','dmax.es','ten.tv'];
+function frameOK(u){try{const h=new URL(u).hostname;return !NOFRAME.some(d=>h===d||h.endsWith('.'+d))}catch(e){return false}}
+function webFrame(c,u){$('vid').style.display='none';const f=document.createElement('iframe');f.src=u;f.allow='autoplay; fullscreen; encrypted-media; picture-in-picture';
+  f.onload=()=>setTimeout(()=>window.focus(),500);$('tv').prepend(f);$('ext').href=u;$('ext').classList.add('on')}
+function noStream(c,txt){const w0=c.web||(typeOf(c.url)==='web'?c.url:'');if(w0&&frameOK(w0)){webFrame(c,w0);return}
+  $('mlg').innerHTML=logo(c);$('mtit').textContent=c.num+'  '+c.name;$('mtxt').textContent=txt;
   const w=c.web||(typeOf(c.url)==='web'?c.url:'');$('mweb').style.display=w?'':'none';if(w)$('mweb').href=w;$('msg').classList.add('on')}
 function tune(c,k){
   if(!c)return; k=k||0; const srcs=[c.url,...(c.alts||[])].filter(u=>typeOf(u)==='hls'); stop(); $('msg').classList.remove('on'); const v=$('vid'); const t=typeOf(c.url);
@@ -235,7 +244,7 @@ function tune(c,k){
     else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=src;v.onerror=()=>{if(k+1<srcs.length)tune(c,k+1);else noStream(c,'Ningún enlace funciona ahora mismo.')};v.play().catch(()=>{})}
     else noStream(c,'Este navegador no puede reproducir HLS.');
   }else if(t==='yt'&&ytEmbed(c.url)){v.style.display='none';const f=document.createElement('iframe');f.src=ytEmbed(c.url);f.allow='autoplay; fullscreen';$('tv').prepend(f)}
-  else{v.style.display='none';noStream(c,'Este canal no ofrece un enlace directo público. Pulsa OK en el mando para abrir su directo oficial.')}
+  else{v.style.display='none';noStream(c,'Esta web no permite verse dentro de la app. Pulsa OK en el mando para abrir su directo oficial.')}
   if(!k)osd(c);
 }
 function osd(c){$('on').textContent=c.num;$('olg').innerHTML=logo(c);$('onm').textContent=c.name;
