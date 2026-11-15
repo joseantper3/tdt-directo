@@ -82,7 +82,7 @@ td .lg{width:40px;height:40px;border-radius:8px}
 <body>
 <div id="tv">
   <video id="vid" playsinline autoplay controls></video>
-  <div id="msg"><div><div class="lg" id="mlg"></div><h2 id="mtit" style="margin:0"></h2><p id="mtxt"></p><a id="mweb" target="_blank" rel="noopener">Ver en su web oficial</a></div></div>
+  <div id="msg"><div><div class="lg" id="mlg"></div><h2 id="mtit" style="margin:0"></h2><p id="mtxt"></p><a id="mweb" target="_blank" rel="noopener">Ver en su web oficial · OK</a></div></div>
   <div id="state">Cargando lista…</div>
   <div id="osd"><div class="n num" id="on"></div><div class="lg" id="olg"></div><div><h2 id="onm"></h2><span class="live">En directo</span> <small id="ofmt"></small></div></div>
   <div id="entry" class="num"></div>
@@ -235,7 +235,7 @@ function tune(c,k){
     else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=src;v.onerror=()=>{if(k+1<srcs.length)tune(c,k+1);else noStream(c,'Ningún enlace funciona ahora mismo.')};v.play().catch(()=>{})}
     else noStream(c,'Este navegador no puede reproducir HLS.');
   }else if(t==='yt'&&ytEmbed(c.url)){v.style.display='none';const f=document.createElement('iframe');f.src=ytEmbed(c.url);f.allow='autoplay; fullscreen';$('tv').prepend(f)}
-  else{v.style.display='none';noStream(c,'Este canal no ofrece un enlace directo público. Puedes verlo en su web oficial o pegar tu propio enlace en «Editar».')}
+  else{v.style.display='none';noStream(c,'Este canal no ofrece un enlace directo público. Pulsa OK en el mando para abrir su directo oficial.')}
   if(!k)osd(c);
 }
 function osd(c){$('on').textContent=c.num;$('olg').innerHTML=logo(c);$('onm').textContent=c.name;
@@ -318,6 +318,7 @@ document.addEventListener('keydown',e=>{
   if(dg!==null&&!inInput){e.preventDefault();digit(String(dg));return}
   if(k==='ArrowUp'||k==='ChannelUp'||k==='MediaTrackNext'||c===427||c===33){e.preventDefault();step(1)}
   else if(k==='ArrowDown'||k==='ChannelDown'||k==='MediaTrackPrevious'||c===428||c===34){e.preventDefault();step(-1)}
+  else if(k==='Enter'&&!entry&&$('msg').classList.contains('on')&&$('mweb').style.display!=='none'){e.preventDefault();$('mweb').click()}
   else if(k==='Enter'||k==='ContextMenu'||k==='g'||k==='G'||c===457){e.preventDefault();if(entry){clearTimeout(entryT);byNum(parseInt(entry,10));entry='';$('entry').classList.remove('on')}else openGuide()}
   else if(k==='i'||k==='Info'){const v=vis()[cur];if(v)osd(v)}
   else if(k==='e'||k==='E'){openEditor()}
