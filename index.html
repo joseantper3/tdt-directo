@@ -52,6 +52,14 @@ button:hover{background:#252e40}
 .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px max(4vw,14px);border-bottom:1px solid #222a39}
 .head h1{margin:0 auto 0 0;font:700 32px/1.05 "Barlow Condensed"}
 .scroll{overflow:auto;flex:1;padding:16px max(4vw,14px) 40px}
+#guide .gbody{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
+#prev{padding:16px 0 16px max(4vw,14px)}
+.pv{position:relative;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden;border:1px solid #2b3446}
+.pv video,.pv iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+#pmsg{position:absolute;inset:0;display:none;flex-direction:column;gap:10px;align-items:center;justify-content:center;text-align:center;padding:12px;color:var(--mut);font-size:14px;background:radial-gradient(circle at 50% 40%,#1a2233,#05070b 75%)}
+#pmsg.on{display:flex}#pmsg .lg{width:72px;height:72px}
+.pinfo{display:flex;gap:10px;align-items:baseline;margin-top:12px}.pinfo .num{font-size:30px;color:var(--acc)}.pinfo b{font-size:22px}
+@media(max-width:700px){#guide .gbody{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}#prev{padding:10px 14px 0}.pv{max-height:30vh;margin:auto}.pinfo{margin-top:6px}#pstate{margin:2px 0 0}}
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;border-radius:14px;background:var(--pan);border:2px solid transparent;min-height:auto;height:auto}
 .card .lg{width:84px;height:84px}
@@ -99,7 +107,14 @@ td .lg{width:40px;height:40px;border-radius:8px}
 
 <section class="layer" id="guide" aria-label="Guía de canales">
   <div class="head"><h1>Canales</h1><button id="gEdit">Editar</button><button id="gClose">Cerrar</button></div>
-  <div class="scroll"><div id="grid"></div></div>
+  <div class="gbody">
+    <aside id="prev" aria-label="Vista previa">
+      <div class="pv"><video id="pvid" muted playsinline></video><div id="pmsg"><div class="lg" id="plg"></div><span id="ptxt"></span></div></div>
+      <div class="pinfo"><span class="num" id="pnum"></span><b id="pname"></b></div>
+      <p class="tag" id="pstate">Vista previa sin sonido · OK para verlo</p>
+    </aside>
+    <div class="scroll"><div id="grid"></div></div>
+  </div>
 </section>
 
 <section class="layer" id="editor" aria-label="Editar canales">
@@ -259,9 +274,27 @@ function byNum(n){const v=vis();const i=v.findIndex(c=>c.num===n);if(i>=0)go(i);
 
 // ---- Guía ----
 function renderGrid(){const v=vis();$('grid').innerHTML=v.map((c,i)=>`<button class="card${i===cur?' cur':''}${typeOf(c.url)==='web'?' nos':''}" data-i="${i}"><div class="lg">${logo(c)}</div><div class="t"><span class="num">${c.num}</span><span>${c.name}</span></div></button>`).join('')}
-function openGuide(){renderGrid();$('guide').classList.add('on');gFocus=cur;const b=$('grid').children[gFocus];if(b){b.focus();b.scrollIntoView({block:'center'})}}
+function openGuide(){renderGrid();$('guide').classList.add('on');mainMuted=$('vid').muted;$('vid').muted=true;gFocus=cur;const b=$('grid').children[gFocus];if(b){b.focus();b.scrollIntoView({block:'center'})}}
 const closeL=id=>$(id).classList.remove('on');
-$('grid').addEventListener('click',e=>{const b=e.target.closest('.card');if(b){closeL('guide');go(+b.dataset.i)}});
+// ---- Vista previa en la guía ----
+let phls=null,pT=null,pId='',mainMuted=false;
+function stopPrev(){clearTimeout(pT);const v=$('pvid');if(phls){phls.destroy();phls=null}v.pause();v.removeAttribute('src');v.load();const f=$('prev').querySelector('iframe');if(f)f.remove();pId=''}
+function pMsg(c,t){$('plg').innerHTML=logo(c);$('ptxt').textContent=t;$('pmsg').classList.add('on')}
+function playPrev(c,k){k=k||0;const v=$('pvid');const srcs=[c.url,...(c.alts||[])].filter(u=>typeOf(u)==='hls');
+  if(typeOf(c.url)==='yt'&&ytEmbed(c.url)){const f=document.createElement('iframe');f.src=ytEmbed(c.url)+'&mute=1';f.allow='autoplay';f.tabIndex=-1;$('prev').querySelector('.pv').prepend(f);return}
+  if(!srcs.length){const w=c.web||(typeOf(c.url)==='web'?c.url:'');pMsg(c,w&&frameOK(w)?'Sin vista previa: OK abre su directo oficial en la app':'Sin vista previa: OK para abrir su web oficial');return}
+  pMsg(c,'Cargando…');const src=srcs[k];
+  const fail=()=>{if(k+1<srcs.length){stopPrev();pId=c.id;playPrev(c,k+1)}else{stopPrev();pId=c.id;pMsg(c,'La emisión no carga ahora mismo')}};
+  if(window.Hls&&Hls.isSupported()){phls=new Hls({maxBufferLength:8});phls.loadSource(src);phls.attachMedia(v);
+    phls.on(Hls.Events.MANIFEST_PARSED,()=>v.play().catch(()=>{}));phls.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal)fail()})}
+  else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=src;v.onerror=fail;v.play().catch(()=>{})}
+  v.onplaying=()=>$('pmsg').classList.remove('on')}
+function preview(i){const c=vis()[i];if(!c||c.id===pId)return;stopPrev();pId=c.id;$('pmsg').classList.remove('on');
+  $('pnum').textContent=c.num;$('pname').textContent=c.name;pMsg(c,'');$('ptxt').textContent='';pT=setTimeout(()=>playPrev(c),450)}
+$('grid').addEventListener('focusin',e=>{const b=e.target.closest('.card');if(b){gFocus=+b.dataset.i;preview(gFocus)}});
+$('grid').addEventListener('mouseover',e=>{const b=e.target.closest('.card');if(b)preview(+b.dataset.i)});
+function closeGuide(){stopPrev();closeL('guide');$('vid').muted=mainMuted}
+$('grid').addEventListener('click',e=>{const b=e.target.closest('.card');if(b){closeGuide();go(+b.dataset.i)}});
 function gridMove(k){const cards=[...$('grid').children];if(!cards.length)return;
   const cols=Math.max(1,Math.round($('grid').clientWidth/cards[0].offsetWidth));
   const d={ArrowRight:1,ArrowLeft:-1,ArrowDown:cols,ArrowUp:-cols}[k];gFocus=Math.min(cards.length-1,Math.max(0,gFocus+d));cards[gFocus].focus();cards[gFocus].scrollIntoView({block:'nearest'})}
@@ -295,7 +328,7 @@ $('add').onsubmit=e=>{e.preventDefault();const n=Math.max(0,...list.map(c=>c.num
   list.push({id:'u'+Date.now().toString(36),num:n,name:$('aName').value.trim(),url:$('aUrl').value.trim(),logo:$('aLogo').value.trim(),web:'',hidden:false,custom:true});
   e.target.reset();save();renderRows();toast('Añadido en el '+n)};
 $('aCat').onchange=e=>{const c=cat[e.target.value];if(!c)return;$('aName').value=c.name;$('aUrl').value=c.url||c.web||'';$('aLogo').value=c.logo||''};
-function openEditor(){closeL('guide');renderRows();$('editor').classList.add('on')}
+function openEditor(){if($('guide').classList.contains('on'))closeGuide();renderRows();$('editor').classList.add('on')}
 $('eClose').onclick=()=>{closeL('editor');const id=(vis()[cur]||{}).id;save();cur=Math.max(0,vis().findIndex(c=>c.id===id));showBar()};
 
 // ---- Catálogo en vivo (TDTChannels) ----
@@ -322,7 +355,7 @@ document.addEventListener('keydown',e=>{
   const back=k==='Escape'||k==='GoBack'||k==='BrowserBack'||c===461||c===10009||(k==='Backspace'&&!inInput);
   if($('editor').classList.contains('on')){if(back&&!inInput){e.preventDefault();$('eClose').click()}return}
   if($('guide').classList.contains('on')){
-    if(back){e.preventDefault();closeL('guide')}else if(/^Arrow/.test(k)){e.preventDefault();gridMove(k)}
+    if(back){e.preventDefault();closeGuide()}else if(/^Arrow/.test(k)){e.preventDefault();gridMove(k)}
     else if(k==='ChannelUp'||c===427||c===33){e.preventDefault();gridMove('ArrowDown')}else if(k==='ChannelDown'||c===428||c===34){e.preventDefault();gridMove('ArrowUp')}
     return}
   const dg=(c>=48&&c<=57)?c-48:(c>=96&&c<=105)?c-96:null;
@@ -342,7 +375,7 @@ let ty=null;$('tv').addEventListener('touchstart',e=>{ty=e.touches[0].clientY},{
 $('tv').addEventListener('touchend',e=>{if(ty===null)return;const d=e.changedTouches[0].clientY-ty;ty=null;if(Math.abs(d)>70)step(d<0?1:-1);else showBar()});
 $('tv').addEventListener('mousemove',showBar);
 $('bPrev').onclick=()=>step(-1);$('bNext').onclick=()=>step(1);
-$('bGuide').onclick=openGuide;$('gClose').onclick=()=>closeL('guide');$('bEdit').onclick=openEditor;$('gEdit').onclick=openEditor;
+$('bGuide').onclick=openGuide;$('gClose').onclick=closeGuide;$('bEdit').onclick=openEditor;$('gEdit').onclick=openEditor;
 $('bFull').onclick=()=>{const d=document;(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen()).catch(()=>{})};
 
 // ---- Inicio ----
