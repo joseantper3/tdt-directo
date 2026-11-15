@@ -153,7 +153,7 @@ const BASE=[
  ['La 2',[R+'la2/la2_main_dvr.m3u8'],W.rt+'la-2/','https://i.imgur.com/DmuTwDw.png'],
  ['Antena 3',[W.a3+'antena3/'],W.a3+'antena3/',L+'antena-3-es.png'],
  ['Cuatro',[AK+'571643/cuatro/bitrate_1.m3u8'],W.mt+'cuatro/',L+'cuatro-es.png'],
- ['Telecinco',[AK+'571640/telecinco/bitrate_1.m3u8'],W.mt+'telecinco/',L+'telecinco-es.png'],
+ ['Telecinco',['https://www.mediasetinfinity.es/directo/telecinco/'],'https://www.mediasetinfinity.es/directo/telecinco/',L+'telecinco-es.png'],
  ['laSexta',[],W.a3+'lasexta/',L+'lasexta-es.png'],
  ['Clan',[R+'clan/clan_main_dvr.m3u8',R+'clan/clan_main.m3u8','https://ztnr.rtve.es/ztnr/5466990.m3u8'],W.rt+'clan/',L+'clan-es.png'],
  ['Teledeporte',[R+'tdp/tdp_main.m3u8'],W.rt+'teledeporte/',L+'tdp-es.png'],
@@ -225,7 +225,8 @@ function migrate(){let bv=0;try{bv=+localStorage.getItem('tdt.basev')||0}catch(e
   if(bv<BV&&load()){const have=new Set(list.map(c=>norm(c.name)));let n=Math.max(0,...list.map(c=>c.num));BASE.forEach((b,i)=>{if(!have.has(norm(b[0])))list.push({id:'b'+i+Date.now().toString(36),num:++n,name:b[0],url:'',alts:[],web:b[2],logo:'',hidden:false,custom:false})})}
   try{localStorage.setItem('tdt.basev',BV)}catch(e){}
   // quita enlaces caídos de Atresmedia: esos canales abren su directo de Atresplayer dentro de la app
-  list.forEach(c=>{if(/a3live-lh\.akamaihd/.test(c.url||'')){c.url=''}c.alts=(c.alts||[]).filter(u=>!/a3live-lh\.akamaihd/.test(u))});
+  const DEAD=/a3live-lh\.akamaihd|livehlsdai-i\.akamaihd\.net\/hls\/live\/571640/;
+  list.forEach(c=>{if(DEAD.test(c.url||'')){c.url=''}c.alts=(c.alts||[]).filter(u=>!DEAD.test(u));if(norm(c.name)==='telecinco'&&/mitele\.es/.test(c.web||''))c.web='https://www.mediasetinfinity.es/directo/telecinco/'});
   const m={};BASE.forEach(b=>m[norm(b[0])]=b);list.forEach(c=>{const b=m[norm(c.name)];c.alts=c.alts||[];if(!b)return;if(!c.logo&&b[3])c.logo=b[3];b[1].forEach(u=>{if(u!==c.url&&!c.alts.includes(u))c.alts.push(u)});if(!c.url&&!c.custom&&c.alts.length)c.url=c.alts.shift()})}
 const vis=()=>list.filter(c=>!c.hidden).sort((a,b)=>a.num-b.num);
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2600)}
