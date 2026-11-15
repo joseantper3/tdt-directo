@@ -155,6 +155,7 @@ const BASE=[
  ['Cuatro',[AK+'571643/cuatro/bitrate_1.m3u8'],W.mt+'cuatro/',L+'cuatro-es.png'],
  ['Telecinco',['https://www.mediasetinfinity.es/directo/telecinco/'],'https://www.mediasetinfinity.es/directo/telecinco/',L+'telecinco-es.png'],
  ['laSexta',[],W.a3+'lasexta/',L+'lasexta-es.png'],
+ ['La Séptima',['https://www.youtube.com/channel/UCOCGPFW1UqPP9zdol7vEK1A/live'],'https://laseptima.com/la-septima-tv-directo/','https://pbs.twimg.com/profile_images/2074450480743297024/UTvLXCSQ_200x200.jpg'],
  ['Clan',[R+'clan/clan_main_dvr.m3u8',R+'clan/clan_main.m3u8','https://ztnr.rtve.es/ztnr/5466990.m3u8'],W.rt+'clan/',L+'clan-es.png'],
  ['Teledeporte',[R+'tdp/tdp_main.m3u8'],W.rt+'teledeporte/',L+'tdp-es.png'],
  ['24h',[R+'24h/24h_main_dvr.m3u8','https://ztnr.rtve.es/ztnr/1694255.m3u8'],W.rt+'24h/',L+'24h-es.png'],
@@ -211,7 +212,7 @@ const BASE=[
  ["La 2 (Canarias)",["https://ztnr.rtve.es/ztnr/5468585.m3u8"],'',"https://i.imgur.com/DmuTwDw.png"],
  ["7TV Andalucía",["https://especial7tv.gestec-video.com/hls/regional.m3u8"],'',""]
 ];
-const BV=3; // versión de la parrilla base: al subirla se añaden los canales nuevos a listas guardadas
+const BV=4; // versión de la parrilla base: al subirla se añaden los canales nuevos a listas guardadas
 const AMB=['Generalistas','Informativos','Deportivos','Infantiles','Andalucía'];
 const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const typeOf=u=>!u?'web':/youtu\.?be/.test(u)?'yt':/\.m3u8|\/hls|playlist|manifest/i.test(u)?'hls':'web';
@@ -222,6 +223,8 @@ function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(Array.isArr
 function fresh(){return BASE.map((b,i)=>({id:'c'+i+Date.now().toString(36),num:i+1,name:b[0],url:b[1][0]||'',alts:b[1].slice(1),web:b[2],logo:b[3],hidden:false,custom:false}))}
 // completa listas guardadas con logos y enlaces alternativos nuevos
 function migrate(){let bv=0;try{bv=+localStorage.getItem('tdt.basev')||0}catch(e){}
+  // La Séptima (nuevo canal nacional) entra en el 7 y desplaza los demás una posición
+  if(bv<4&&load()&&!list.some(c=>norm(c.name)==='laseptima')){list.forEach(c=>{if(c.num>=7)c.num++});const b=BASE.find(x=>norm(x[0])==='laseptima');list.push({id:'s7'+Date.now().toString(36),num:7,name:b[0],url:b[1][0],alts:[],web:b[2],logo:b[3],hidden:false,custom:false})}
   if(bv<BV&&load()){const have=new Set(list.map(c=>norm(c.name)));let n=Math.max(0,...list.map(c=>c.num));BASE.forEach((b,i)=>{if(!have.has(norm(b[0])))list.push({id:'b'+i+Date.now().toString(36),num:++n,name:b[0],url:'',alts:[],web:b[2],logo:'',hidden:false,custom:false})})}
   try{localStorage.setItem('tdt.basev',BV)}catch(e){}
   // quita enlaces caídos de Atresmedia: esos canales abren su directo de Atresplayer dentro de la app
