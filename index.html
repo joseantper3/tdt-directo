@@ -258,6 +258,10 @@ function noStream(c,txt){const w0=c.web||(typeOf(c.url)==='web'?c.url:'');if(w0&
 function tune(c,k){
   if(!c)return; k=k||0; const srcs=[c.url,...(c.alts||[])].filter(u=>typeOf(u)==='hls'); stop(); $('msg').classList.remove('on'); const v=$('vid'); const t=typeOf(c.url);
   try{localStorage.setItem(LAST,c.id)}catch(e){}
+  // webs que no se dejan ver dentro de la app: se abren solas en una pestaña nueva
+  const w=c.web||(t==='web'?c.url:'');
+  if(!k&&!c.custom&&w&&!frameOK(w)){v.style.display='none';let win=null;try{win=window.open(w,'_blank');if(win)win.opener=null}catch(e){}
+    noStream(c,win?'Su directo oficial se ha abierto en una pestaña nueva. Pulsa OK para abrirlo otra vez.':'Pulsa OK en el mando para abrir su directo oficial.');osd(c);return}
   if(srcs.length&&t!=='yt'){
     v.style.display=''; const src=srcs[k];
     if(window.Hls&&Hls.isSupported()){hls=new Hls({maxBufferLength:20});hls.loadSource(src);hls.attachMedia(v);
