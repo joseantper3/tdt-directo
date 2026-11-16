@@ -264,7 +264,7 @@ function tune(c,k){
   try{localStorage.setItem(LAST,c.id)}catch(e){}
   // webs que no se dejan ver dentro de la app: se abren solas en una pestaña nueva
   const w=c.web||(t==='web'?c.url:'');
-  if(!k&&!c.custom&&w&&!frameOK(w)){v.style.display='none';let win=null;try{win=window.open(w,'_blank');if(win)win.opener=null}catch(e){}
+  if(!k&&!c.custom&&w&&!frameOK(w)){v.style.display='none';let win=null;try{if(window.TDTAndroid){TDTAndroid.open(w);win=true}else{win=window.open(w,'_blank');if(win)win.opener=null}}catch(e){}
     noStream(c,win?'Su directo oficial se ha abierto en una pestaña nueva. Pulsa OK para abrirlo otra vez.':'Pulsa OK en el mando para abrir su directo oficial en una pestaña nueva.');osd(c);return}
   if(srcs.length&&t!=='yt'){
     v.style.display=''; const src=srcs[k];
@@ -391,6 +391,8 @@ $('bPrev').onclick=()=>step(-1);$('bNext').onclick=()=>step(1);
 $('bGuide').onclick=openGuide;$('gClose').onclick=closeGuide;$('bEdit').onclick=openEditor;$('gEdit').onclick=openEditor;
 $('bFull').onclick=()=>{const d=document;(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen()).catch(()=>{})};
 
+// En la app de Android, los enlaces externos se abren en el navegador del dispositivo
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[target=_blank]');if(a&&window.TDTAndroid&&a.href){e.preventDefault();TDTAndroid.open(a.href)}},true);
 // ---- Inicio ----
 list=load()||fresh();migrate();save();
 let last='';try{last=localStorage.getItem(LAST)||''}catch(e){}

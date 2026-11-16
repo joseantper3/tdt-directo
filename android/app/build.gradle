@@ -1,0 +1,31 @@
+plugins { id 'com.android.application' }
+
+def run = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+android {
+    namespace 'es.joseantper3.tdtdirecto'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'es.joseantper3.tdtdirecto'
+        minSdk 21
+        targetSdk 34
+        versionCode run
+        versionName "1.0.${run}"
+    }
+    // Firma fija para que las actualizaciones se instalen encima de la versión anterior.
+    signingConfigs {
+        release {
+            storeFile file('../tdt-directo.jks')
+            storePassword 'tdtdirecto'
+            keyAlias 'tdt'
+            keyPassword 'tdtdirecto'
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.release }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
