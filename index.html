@@ -251,7 +251,8 @@ function stop(){$('ext').classList.remove('on');const v=$('vid');if(hls){hls.des
 function ytEmbed(u){let m=(u||'').match(/channel[=\/](UC[\w-]{22})/);if(m)return 'https://www.youtube.com/embed/live_stream?channel='+m[1]+'&autoplay=1';
   m=(u||'').match(/(?:v=|youtu\.be\/|embed\/|live\/)([\w-]{11})(?![\w-])/);return m?'https://www.youtube.com/embed/'+m[1]+'?autoplay=1':''}
 // webs que no se dejan abrir dentro de otra página
-const NOFRAME=['mitele.es','mediasetinfinity.es','dmax.es','ten.tv'];
+// estas webs se abren fuera, en una pestaña nueva (Atresmedia y Mediaset por elección del usuario)
+const NOFRAME=['atresplayer.com','mitele.es','mediasetinfinity.es','dmax.es','ten.tv'];
 function frameOK(u){try{const h=new URL(u).hostname;return !NOFRAME.some(d=>h===d||h.endsWith('.'+d))}catch(e){return false}}
 function webFrame(c,u){$('vid').style.display='none';const f=document.createElement('iframe');f.src=u;f.allow='autoplay; fullscreen; encrypted-media; picture-in-picture';
   f.onload=()=>setTimeout(()=>window.focus(),500);$('tv').prepend(f);$('ext').href=u;$('ext').classList.add('on')}
@@ -264,7 +265,7 @@ function tune(c,k){
   // webs que no se dejan ver dentro de la app: se abren solas en una pestaña nueva
   const w=c.web||(t==='web'?c.url:'');
   if(!k&&!c.custom&&w&&!frameOK(w)){v.style.display='none';let win=null;try{win=window.open(w,'_blank');if(win)win.opener=null}catch(e){}
-    noStream(c,win?'Su directo oficial se ha abierto en una pestaña nueva. Pulsa OK para abrirlo otra vez.':'Pulsa OK en el mando para abrir su directo oficial.');osd(c);return}
+    noStream(c,win?'Su directo oficial se ha abierto en una pestaña nueva. Pulsa OK para abrirlo otra vez.':'Pulsa OK en el mando para abrir su directo oficial en una pestaña nueva.');osd(c);return}
   if(srcs.length&&t!=='yt'){
     v.style.display=''; const src=srcs[k];
     if(window.Hls&&Hls.isSupported()){hls=new Hls({maxBufferLength:20});hls.loadSource(src);hls.attachMedia(v);
